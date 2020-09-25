@@ -40,7 +40,7 @@ for i in range(2,420): #should be 2 to 420
 
 
 mat = np.matrix(data)
-with open('CombinedDataTest.txt','wb') as f:
+with open('./Data/CombinedData.txt','wb') as f:
     for line in mat:
         np.savetxt(f,line)
 
