@@ -20,7 +20,7 @@ filepath = './Data/Net_Data.txt'
 net_data = np.genfromtxt(filepath)
 
 #slice data
-answers = net_data[:,-1] #systolic blood pressure
+# answers = net_data[:,-1] #systolic blood pressure
 answers = net_data[:,-2] #diastolic blood pressure
 patient = net_data[:,0].copy()
 inputs = net_data[:,1:-2]
