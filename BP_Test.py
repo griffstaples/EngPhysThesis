@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Author: Griffin Staples
+Date Created: Thu Feb 21 2019
+License:
+The MIT License (MIT)
+Copyright (c) 2019 Griffin Staples
+
+"""
+
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
@@ -7,7 +18,6 @@ import pandas as pd
 #import data
 filename = 'Net_Data.txt'
 net_data = np.genfromtxt(filename)
-
 
 #slice data
 answers = net_data[:,-2]
@@ -77,16 +87,3 @@ mae = np.abs(x-answers)
 print(mae)
 print(np.mean(mae))
 print(np.std(mae))
-##print(hist['val_mae_std'])
-#
-#bins = np.linspace(-5,35,12)
-#plt.hist(mae,bins=bins,histtype='barstacked')
-#plt.show()
-
-#first_layer_weights = model.layers[0].get_weights()[0]
-#print(np.mean(np.abs(first_layer_weights),axis=1))
-
-#second_layer_weights = model.layers[1].get_weights()[0]
-
-#print(first_layer_weights)
-#print(second_layer_weights)

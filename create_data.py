@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 21 18:35:50 2019
-Created By: Griffin Staples
-Student Number: 10168533
+Author: Griffin Staples
+Date Created: Thu Feb 21 2019
+License:
+The MIT License (MIT)
+Copyright (c) 2019 Griffin Staples
 
 """
+
+
+
+
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 

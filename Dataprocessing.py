@@ -15,14 +15,12 @@ import pandas as pd
 data = np.genfromtxt('CombinedData657.txt')
 data = data[:-2,:]
 cols_to_use = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-Info = pd.read_excel('PPG-BP dataset.xlsx', skiprows=1, usecols=cols_to_use).as_matrix()
-skew = pd.read_excel('Table_1.xlsx',skiprows=0, usecols=[1,2,3,4]).as_matrix()
+Info = pd.read_excel('PPG-BP dataset.xlsx', skiprows=1, usecols=cols_to_use).values
+skew = pd.read_excel('Table_1.xlsx',skiprows=0, usecols=[1,2,3,4]).values
 
 patient = data[:, -1].copy()
 data = data[:, :-1]
 rows = len(data[:, 0])
-print(len(data[:,0]))
-
 
 def normalize1D(array):
     temp = (array - np.nanmin(array)) / (np.nanmax(array) - np.nanmin(array))
@@ -128,9 +126,30 @@ def getSpacings(dp_ind,sp_ind,dn_ind,normed_data,rows):
 
     return sp_dp_spacing, sp_dn_spacing, fwhm
 
+def plot_first_deriv(data_f):
+    # find first derivative of filtered data and plot
+    deriv1 = np.gradient(data_f, spacing, axis = 1)
+    deriv1_f = scipy.signal.savgol_filter(deriv1, 99, 2)
+    deriv1_f = scipy.signal.savgol_filter(deriv1_f, 99, 1)
+    deriv1_f_n = normalizeRows(deriv1_f, rows)
+    plt.plot(t, deriv1_f_n[testsignal, :])
+    plt.xlabel("Time [s]")
+    plt.ylabel("Amplitude(t)' [1/s]")
+    plt.show()
+    return deriv1_f, deriv1_f_n
 
+def plot_second_deriv(deriv1_f):
 
-
+    # find second derivative of filtered data and plot
+    deriv2 = np.gradient(deriv1_f, spacing, axis = 1)
+    deriv2_f = scipy.signal.savgol_filter(deriv2, 99, 2)
+    deriv2_f = scipy.signal.savgol_filter(deriv2_f, 59, 1)
+    deriv2_f_n = normalizeRows(deriv2_f, rows)
+    plt.plot(t, deriv2_f_n[testsignal, :])
+    plt.xlabel("Time [s]")
+    plt.ylabel("Amplitude(t)\" [1/s]")
+    plt.show()
+    return deriv2_f, deriv2_f_n
 
 SQI = np.zeros((len(patient)))
 
@@ -150,34 +169,15 @@ for p in range(2,len(patient)):
             break
 
 
+testsignal = 0 #test signal to use
+spacing = 1/1000 # spacing of data points for taking derivatives
+t = np.linspace(0, 2.099, 2100) # time values corresponding to each data point
 
-
-
-
-
-# def getPulseWidth(x1,data,rows,bpm):
-#    #calculate the average width of each pulse
-#    half_max = stats(data,rows,bpm)
-#    line  = np.ones(2)*half_max
-#    x,y = it.intersection(x1,data,x1,line)
-#
-#    return x,y
-
-
-# test signal to use
-testsignal = 0
-
-# spacing of data points for taking derivatives
-spacing = 1/1000
-# time values corresponding to each data point
-t = np.linspace(0, 2.099, 2100)
-
+#filter and plot test signal
 plt.figure(0)
-# filter data and plot
 data_f = np.array(scipy.signal.savgol_filter(data, 99, 2))
 win = 99
 data_m = np.convolve(data[testsignal,:],np.ones(win,)/win, mode = 'same')
-#data_f = scipy.signal.savgol_filter(data_f, 59, 1)
 data_f_n = normalizeRows(data_f, rows)
 plt.plot(t,data[testsignal,:])
 plt.plot(t, data_f[testsignal, :],'k')
@@ -189,41 +189,16 @@ plt.xlim(0.35,0.8)
 plt.ylim(1500,2700)
 plt.show()
 
-error = np.sum(np.abs(data-data_f),axis=1)/len(data[0,:])
 
+deriv1_f, deriv1_f_n = plot_first_deriv(data_f)
+deriv2_f, deriv2_f_n = plot_second_deriv(deriv1_f)
 
-
-# x = np.linspace(-1,1,11)
-# test_func = np.zeros((2,11))
-# test_func[0,:] = np.array([elem**2 for elem in x])
-# test_func[1,:] = np.array([1 for elem in x])
-# derivative = np.gradient(test_func,x[1]-x[0],axis=1)
-# print(derivative)
-# # plt.plot(x,test_func[0,:])
-# # plt.plot(x,test_func[1,:])
-# # plt.plot(x,derivative[0,:])
-# # plt.plot(x,derivative[1,:])
-
-# find first derivative of filtered data and plot
-deriv1 = np.gradient(data_f, spacing, axis = 1)
-deriv1_f = scipy.signal.savgol_filter(deriv1, 99, 2)
-deriv1_f = scipy.signal.savgol_filter(deriv1_f, 99, 1)
-deriv1_f_n = normalizeRows(deriv1_f, rows)
-#plt.plot(t, deriv1_f_n[testsignal, :])
-
-
-# find second derivative of filtered data and plot
-deriv2 = np.gradient(deriv1_f, spacing, axis = 1)
-deriv2_f = scipy.signal.savgol_filter(deriv2, 99, 2)
-deriv2_f = scipy.signal.savgol_filter(deriv2_f, 59, 1)
-deriv2_f_n = normalizeRows(deriv2_f, rows)
-#plt.plot(t, deriv2_f_n[testsignal, :])
-
-
+#get info about systole signal
 BPM = getPatientData(Info, patient, rows, 7)
 avg_max, sys_peak_index = getSystoleInfo(data_f, rows, BPM)
 aug_index = np.zeros(rows)
 
+#get spacing between systolic and diastolic peaks and Full-Width Half-Max
 sp_dp_spacing = np.zeros(rows)
 sp_dn_spacing = np.zeros(rows)
 fwhm = np.zeros(rows)
@@ -237,6 +212,7 @@ for i in range(rows):
 
 net_data = np.zeros((rows, 9))
 
+# Transform Sex to 1 or 0 for neural net
 for i in range(len(Info[:,0])):
     if Info[i, 1] == 'Female':
         Info[i, 1] = 0
@@ -246,6 +222,7 @@ for i in range(len(Info[:,0])):
 for i in range(9):
     net_data[:, i] = getPatientData(Info, patient, rows, i)
 
+#reformat net data and answers
 answers = net_data[:, 5:7].copy()
 net_data = np.delete(net_data, (5, 6), 1)
 avg_max = np.array(avg_max)
@@ -256,44 +233,11 @@ net_data = np.column_stack((net_data, aug_index)) #(7)
 net_data = np.column_stack((net_data,sp_dp_spacing)) #(8)
 net_data = np.column_stack((net_data,sp_dn_spacing)) #(9)
 net_data = np.column_stack((net_data,fwhm))     #(10)
-#net_data = np.column_stack((net_data,error))
-#net_data = np.column_stack((net_data,SQI))
 net_data[:, 1:] = normalizeCols(net_data[:, 1:], len(net_data[0, 1:]))
 net_data = np.column_stack((net_data, answers))
 
-temporary = np.zeros((420,len(net_data[0,:])))
-temporary[2,:] =net_data[0,:]
-count=0
-for i in range(1,len(temporary[:,0])):
-    temporary[net_data[i,0].astype(int),:]+= net_data[i,:]
-    if(net_data[i,0]==net_data[i-1,0]):
-        count+=1
-    else:
-        temporary[net_data[i-1,0].astype(int),:]/=(count+1)
-        count=0
-temporary[net_data[-1,0].astype(int),:]/=3
-temporary = temporary[temporary[:,0].astype(bool),:]
-temporary  = temporary[0:-2,:]
 
-
-#get rid of last two points
-net_data = net_data[0:-2,:]
-
-
-#get rid of data that has too much error
-# error = error[0:-2]
-# error[error>=15] = 0
-# net_data = net_data[error.astype(bool),:]
-plt.scatter(net_data[:,6],net_data[:,-2])
-#plt.xlim(0,0.3)
-plt.xlabel('BMI (Normalized)')
-plt.ylabel('Systolic Blood Pressure [mmHg]')
-plt.show()
-
-#net_data = net_data[error.astype(bool),:]
-np.savetxt('Average_Unshuffled.txt',temporary)
-np.random.shuffle(temporary)
-np.savetxt('Average.txt',temporary)
+# Save different net input and answers
 np.random.shuffle(net_data)
 np.savetxt('Net_Data.txt',net_data)
 
